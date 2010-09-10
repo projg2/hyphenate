@@ -1,23 +1,9 @@
 #!/usr/bin/python2
 
 import codecs, re, sys
-import argparse
+import optparse
 
 from hyphenator import Hyphenator
-
-class EncodedFileType(argparse.FileType):
-	def __init__(self, mode='r', encoding=None, errors=None, bufsize=None):
-		argparse.FileType.__init__(self, mode, bufsize)
-		self._encoding = encoding
-		self._errors = errors
-
-	def __call__(self, string):
-		if self._bufsize:
-			return codecs.open(string, self._mode, self._encoding,
-				self._errors, self._bufsize)
-		else:
-			return codecs.open(string, self._mode, self._encoding,
-				self._errors)
 
 def split_args(argv):
 	out = []
@@ -35,23 +21,26 @@ def split_args(argv):
 		yield out
 
 def main(argv):
-	argparser = argparse.ArgumentParser()
-	argparser.add_argument('-t', '--text', action='store_const',
+	argparser = optparse.OptionParser(
+			usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
+	argparser.add_option('-t', '--text', action='store_const',
 			dest='type', const='text',
 			help='Treat the following files as plain text files')
-	argparser.add_argument('files', metavar='file', nargs='+',
-			type=EncodedFileType('r+', 'utf-8'),
-			help='The file(s) to process')
 	argparser.set_defaults(type='text')
 
-	# Ok, argparse is stupid and doesn't like mixing positional args
-	# with optional ones. So we parse them in series.
-	args = None
+	# Parse the arguments in series in order to apply the preceeding
+	# options to the filenames.
+	opts = None
 	for arggroup in split_args(argv[1:]):
-		args = argparser.parse_args(arggroup, args)
-		for f in args.files:
-			if args.type == 'text':
-				hyph_text(f)
+		(opts, args) = argparser.parse_args(arggroup, opts)
+		for path in args:
+			try:
+				f = codecs.open(path, 'r+', 'utf-8')
+			except IOError as e:
+				sys.stderr.write('open() failed: %s\n' % str(e))
+			else:
+				if opts.type == 'text':
+					hyph_text(f)
 
 	return 0
 
