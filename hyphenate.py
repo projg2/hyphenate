@@ -20,8 +20,7 @@ def split_args(argv):
 		else:
 			gotfile = True
 		out.append(a)
-	if out:
-		yield out
+	yield out
 
 def main(argv):
 	argparser = optparse.OptionParser(
@@ -34,8 +33,14 @@ def main(argv):
 	# Parse the arguments in series in order to apply the preceeding
 	# options to the filenames.
 	opts = None
-	for arggroup in split_args(argv[1:]):
+	for argn, arggroup in enumerate(split_args(argv[1:])):
 		(opts, args) = argparser.parse_args(arggroup, opts)
+		if not args:
+			if argn == 0:
+				argparser.error('no file specified')
+				return 1
+			else:
+				sys.stderr.write('Warning: options passed after the last file have no effect.\n')
 		for path in args:
 			try:
 				f = codecs.open(path, 'r+', 'utf-8')
