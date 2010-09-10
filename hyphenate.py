@@ -25,10 +25,17 @@ def split_args(argv):
 def main(argv):
 	argparser = optparse.OptionParser(
 			usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
+
+	argparser.add_option('-e', '--encoding', action='store',
+			dest='encoding',
+			help='Character encoding to use for I/O (default: utf-8)')
 	argparser.add_option('-t', '--text', action='store_const',
 			dest='type', const='text',
 			help='Treat the following files as plain text files')
-	argparser.set_defaults(type='text')
+
+	argparser.set_defaults(
+			encoding='utf-8',
+			type='text')
 
 	# Parse the arguments in series in order to apply the preceeding
 	# options to the filenames.
@@ -43,9 +50,11 @@ def main(argv):
 				sys.stderr.write('Warning: options passed after the last file have no effect.\n')
 		for path in args:
 			try:
-				f = codecs.open(path, 'r+', 'utf-8')
+				f = codecs.open(path, 'r+', opts.encoding)
 			except IOError as e:
 				sys.stderr.write('open() failed: %s\n' % str(e))
+			except LookupError as e:
+				argparser.error(str(e))
 			else:
 				if opts.type == 'text':
 					hyph_text(f)
