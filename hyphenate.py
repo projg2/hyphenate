@@ -8,9 +8,12 @@ from hyphenator import Hyphenator
 def split_args(argv):
 	out = []
 	gotfile = False
-	for a in argv:
+	for i, a in enumerate(argv):
 		if a.startswith('-'):
-			if gotfile:
+			if a == '--':
+				out.extend(argv[i:])
+				break
+			elif gotfile:
 				yield out
 				out = []
 				gotfile = False
