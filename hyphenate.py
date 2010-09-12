@@ -29,6 +29,9 @@ class MultiArgOptionParser(optparse.OptionParser):
 			(values, args) = optparse.OptionParser.parse_args(self, arggroup, values)
 			yield (values, args)
 
+def reset_opts(opt, optstr, values, parser):
+	parser.values.__init__(defaults = parser.defaults)
+
 def main(argv):
 	argparser = MultiArgOptionParser(
 			usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
@@ -36,6 +39,9 @@ def main(argv):
 	argparser.add_option('-e', '--encoding', action='store',
 			dest='encoding',
 			help='Character encoding to use for I/O (default: utf-8)')
+	argparser.add_option('-r', '--reset', action='callback',
+			callback=reset_opts,
+			help='Reset the options to defaults (forfeit previous options)')
 	argparser.add_option('-t', '--text', action='store_const',
 			dest='type', const='text',
 			help='Treat the following files as plain text files')
