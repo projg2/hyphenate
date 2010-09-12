@@ -5,25 +5,32 @@ import optparse
 
 from hyphenator import Hyphenator
 
-def split_args(argv):
-	out = []
-	gotfile = False
-	for i, a in enumerate(argv):
-		if a.startswith('-'):
-			if a == '--':
-				out.extend(argv[i:])
-				break
-			elif gotfile:
-				yield out
-				out = []
-				gotfile = False
-		else:
-			gotfile = True
-		out.append(a)
-	yield out
+class MultiArgOptionParser(optparse.OptionParser):
+	@staticmethod
+	def split_args(argv):
+		out = []
+		gotfile = False
+		for i, a in enumerate(argv):
+			if a.startswith('-'):
+				if a == '--':
+					out.extend(argv[i:])
+					break
+				elif gotfile:
+					yield out
+					out = []
+					gotfile = False
+			else:
+				gotfile = True
+			out.append(a)
+		yield out
+
+	def parse_args(self, argv, values = None):
+		for arggroup in self.split_args(argv):
+			(values, args) = optparse.OptionParser.parse_args(self, arggroup, values)
+			yield (values, args)
 
 def main(argv):
-	argparser = optparse.OptionParser(
+	argparser = MultiArgOptionParser(
 			usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
 
 	argparser.add_option('-e', '--encoding', action='store',
@@ -40,8 +47,7 @@ def main(argv):
 	# Parse the arguments in series in order to apply the preceeding
 	# options to the filenames.
 	opts = None
-	for argn, arggroup in enumerate(split_args(argv[1:])):
-		(opts, args) = argparser.parse_args(arggroup, opts)
+	for argn, (opts, args) in enumerate(argparser.parse_args(argv[1:])):
 		if not args:
 			if argn == 0:
 				argparser.error('no file specified')
