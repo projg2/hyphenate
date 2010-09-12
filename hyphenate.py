@@ -34,6 +34,7 @@ def reset_opts(opt, optstr, values, parser):
 
 def main(argv):
 	locale.setlocale(locale.LC_ALL, '')
+	deflang = locale.getlocale(locale.LC_COLLATE)[0] or 'en_GB'
 	defenc = locale.nl_langinfo(locale.CODESET) or 'utf-8'
 
 	argparser = MultiArgOptionParser(
@@ -41,7 +42,10 @@ def main(argv):
 
 	argparser.add_option('-e', '--encoding', action='store',
 			dest='encoding',
-			help='Character encoding to use for I/O (default: %s)' % defenc)
+			help='Character encoding to use for I/O (locale default: %s)' % defenc)
+	argparser.add_option('-l', '--language', action='store',
+			dest='language',
+			help='The language to lookup the hyphenation rules for (locale default: %s)' % deflang)
 	argparser.add_option('-r', '--reset', action='callback',
 			callback=reset_opts,
 			help='Reset the options to defaults (forfeit previous options)')
@@ -51,6 +55,7 @@ def main(argv):
 
 	argparser.set_defaults(
 			encoding=defenc,
+			language=deflang,
 			type='text')
 
 	# Parse the arguments in series in order to apply the preceeding
@@ -63,6 +68,13 @@ def main(argv):
 				return 1
 			else:
 				sys.stderr.write('Warning: options passed after the last file have no effect.\n')
+		try:
+			h = Hyphenator('/usr/share/myspell/hyph_%s.dic' % opts.language, 3, 3)
+		except IOError as e:
+			argparser.error('unknown language: %s (%s)' % (opts.language, str(e)))
+			# well, this probably won't be reached but keep it safe
+			continue
+
 		for path in args:
 			try:
 				f = codecs.open(path, 'r+', opts.encoding)
@@ -72,12 +84,11 @@ def main(argv):
 				argparser.error(str(e))
 			else:
 				if opts.type == 'text':
-					hyph_text(f)
+					hyph_text(f, h)
 
 	return 0
 
-def hyph_text(f):
-	h = Hyphenator('/usr/share/myspell/hyph_pl_PL.dic', 3, 3)
+def hyph_text(f, h):
 	wordregex = re.compile('(?u)(\W+)')
 
 	lines = f.readlines()
