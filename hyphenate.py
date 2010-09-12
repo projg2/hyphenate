@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 
-import codecs, re, sys
+import codecs, locale, re, sys
 import optparse
 
 from hyphenator import Hyphenator
@@ -33,12 +33,15 @@ def reset_opts(opt, optstr, values, parser):
 	parser.values.__init__(defaults = parser.defaults)
 
 def main(argv):
+	locale.setlocale(locale.LC_ALL, '')
+	defenc = locale.nl_langinfo(locale.CODESET) or 'utf-8'
+
 	argparser = MultiArgOptionParser(
 			usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
 
 	argparser.add_option('-e', '--encoding', action='store',
 			dest='encoding',
-			help='Character encoding to use for I/O (default: utf-8)')
+			help='Character encoding to use for I/O (default: %s)' % defenc)
 	argparser.add_option('-r', '--reset', action='callback',
 			callback=reset_opts,
 			help='Reset the options to defaults (forfeit previous options)')
@@ -47,7 +50,7 @@ def main(argv):
 			help='Treat the following files as plain text files')
 
 	argparser.set_defaults(
-			encoding='utf-8',
+			encoding=defenc,
 			type='text')
 
 	# Parse the arguments in series in order to apply the preceeding
