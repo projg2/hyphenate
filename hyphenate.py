@@ -96,7 +96,7 @@ def hyph_text(f, h):
 	for i, l in enumerate(lines):
 		words = wordregex.split(l)
 		for j, w in enumerate(words):
-			if i%2 == 0: # even ones are separators
+			if j%2 == 0: # even ones are separators
 				words[j] = h.inserted(w, u'\u00ad') # soft hyphen
 		lines[i] = u''.join(words)
 
