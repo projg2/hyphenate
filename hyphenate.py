@@ -1,9 +1,13 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
-import codecs, locale, re, sys
+import codecs
+import locale
 import optparse
+import re
+import sys
 
 import pyphen
+
 
 class MultiArgOptionParser(optparse.OptionParser):
 	@staticmethod
@@ -29,8 +33,10 @@ class MultiArgOptionParser(optparse.OptionParser):
 			(values, args) = optparse.OptionParser.parse_args(self, arggroup, values)
 			yield (values, args)
 
+
 def reset_opts(opt, optstr, values, parser):
 	parser.values.__init__(defaults = parser.defaults)
+
 
 def main(argv):
 	locale.setlocale(locale.LC_ALL, '')
@@ -88,6 +94,7 @@ def main(argv):
 
 	return 0
 
+
 def hyph_text(f, h):
 	wordregex = re.compile('(?u)(\W+)')
 
@@ -96,13 +103,14 @@ def hyph_text(f, h):
 	for i, l in enumerate(lines):
 		words = wordregex.split(l)
 		for j, w in enumerate(words):
-			if j%2 == 0: # even ones are separators
-				words[j] = h.inserted(w, hyphen=u'\u00ad') # soft hyphen
+			if j % 2 == 0:  # even ones are separators
+				words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
 		lines[i] = u''.join(words)
 
 	f.seek(0)
 	f.truncate()
 	f.writelines(lines)
+
 
 if __name__ == "__main__":
 	sys.exit(main(sys.argv))
