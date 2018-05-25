@@ -74,16 +74,12 @@ def main(argv):
 def hyph_text(f, outf, h):
     wordregex = re.compile('(?u)(\W+)')
 
-    lines = f.readlines()
-
-    for i, l in enumerate(lines):
+    for l in f:
         words = wordregex.split(l)
         for j, w in enumerate(words):
             if j % 2 == 0:  # even ones are separators
                 words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
-        lines[i] = u''.join(words)
-
-    outf.writelines(lines)
+        outf.write(u''.join(words))
 
 
 if __name__ == "__main__":
