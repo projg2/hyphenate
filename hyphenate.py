@@ -3,6 +3,7 @@
 import argparse
 import codecs
 import locale
+import lxml.etree
 import re
 import shutil
 import sys
@@ -28,13 +29,44 @@ def hyph_word(word, h, hyphen):
     return u''.join(words)
 
 
+def hyph_text_block(block, h):
+    words = wsregex.split(block)
+    for j, w in enumerate(words):
+        if j % 2 == 0:  # even ones are separators
+            words[j] = hyph_word(words[j], h, u'\u00ad')  # soft hyphen
+    return u''.join(words)
+
+
 def hyph_text(f, outf, h):
     for l in f:
-        words = wsregex.split(l)
-        for j, w in enumerate(words):
-            if j % 2 == 0:  # even ones are separators
-                words[j] = hyph_word(words[j], h, u'\u00ad')  # soft hyphen
-        outf.write(u''.join(words))
+        outf.write(hyph_text_block(l, h))
+
+
+def hyph_xhtml_recursive(elem, h):
+    # only hyphenate when we know it's safe
+    tag = lxml.etree.QName(elem).localname
+    if tag in ['body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7',
+            'dl', 'dt', 'dd', 'ul', 'ol', 'li', 'p', 'a', 'blockquote',
+            'strong', 'em', 'cite', 'span']:
+        if elem.text:
+            elem.text = hyph_text_block(elem.text, h)
+    elif tag in ['pre']:
+        # skip hyphenation here, recursively
+        return
+    else:
+        raise NotImplementedError(tag)
+
+    for e in elem:
+        hyph_xhtml_recursive(e, h)
+
+
+def hyph_xhtml(f, outf, h):
+    xhtml = lxml.etree.parse(f)
+    html = xhtml.getroot()
+    ns = lxml.etree.QName(html).namespace
+    body = html.find(lxml.etree.QName(ns, 'body'))
+    hyph_xhtml_recursive(body, h)
+    outf.write(lxml.etree.tostring(xhtml, encoding='unicode'))
 
 
 def main(argv):
@@ -59,6 +91,10 @@ def main(argv):
         '-t', '--text', action='store_const',
         dest='processor', const=hyph_text,
         help='Process files as plain text files (default)')
+    typearg.add_argument(
+        '-x', '--xhtml', action='store_const',
+        dest='processor', const=hyph_xhtml,
+        help='Process files as XHTML')
 
     argparser.add_argument('file', nargs='+')
     argparser.set_defaults(
