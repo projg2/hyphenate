@@ -28,14 +28,15 @@ class MultiArgOptionParser(optparse.OptionParser):
             out.append(a)
         yield out
 
-    def parse_args(self, argv, values = None):
+    def parse_args(self, argv, values=None):
         for arggroup in self.split_args(argv):
-            (values, args) = optparse.OptionParser.parse_args(self, arggroup, values)
+            (values, args) = optparse.OptionParser.parse_args(
+                    self, arggroup, values)
             yield (values, args)
 
 
 def reset_opts(opt, optstr, values, parser):
-    parser.values.__init__(defaults = parser.defaults)
+    parser.values.__init__(defaults=parser.defaults)
 
 
 def main(argv):
@@ -46,23 +47,28 @@ def main(argv):
     argparser = MultiArgOptionParser(
             usage='%prog [opts1] file1 [...] [[opts2] file2 [...]] [...]')
 
-    argparser.add_option('-e', '--encoding', action='store',
-            dest='encoding',
-            help='Character encoding to use for I/O (locale default: %s)' % defenc)
-    argparser.add_option('-l', '--language', action='store',
-            dest='language',
-            help='The language to lookup the hyphenation rules for (locale default: %s)' % deflang)
-    argparser.add_option('-r', '--reset', action='callback',
-            callback=reset_opts,
-            help='Reset the options to defaults (forfeit previous options)')
-    argparser.add_option('-t', '--text', action='store_const',
-            dest='type', const='text',
-            help='Treat the following files as plain text files')
+    argparser.add_option(
+        '-e', '--encoding', action='store',
+        dest='encoding',
+        help='Character encoding to use for I/O (locale default: %s)' % defenc)
+    argparser.add_option(
+        '-l', '--language', action='store',
+        dest='language',
+        help='The language to lookup the hyphenation rules for '
+             '(locale default: %s)' % deflang)
+    argparser.add_option(
+        '-r', '--reset', action='callback',
+        callback=reset_opts,
+        help='Reset the options to defaults (forfeit previous options)')
+    argparser.add_option(
+        '-t', '--text', action='store_const',
+        dest='type', const='text',
+        help='Treat the following files as plain text files')
 
     argparser.set_defaults(
-            encoding=defenc,
-            language=deflang,
-            type='text')
+        encoding=defenc,
+        language=deflang,
+        type='text')
 
     # Parse the arguments in series in order to apply the preceeding
     # options to the filenames.
@@ -73,11 +79,13 @@ def main(argv):
                 argparser.error('no file specified')
                 return 1
             else:
-                sys.stderr.write('Warning: options passed after the last file have no effect.\n')
+                sys.stderr.write('Warning: options passed after '
+                                 'the last file have no effect.\n')
         try:
             h = pyphen.Pyphen(lang=opts.language)
         except IOError as e:
-            argparser.error('unknown language: %s (%s)' % (opts.language, str(e)))
+            argparser.error('unknown language: %s (%s)' % (
+                opts.language, str(e)))
             # well, this probably won't be reached but keep it safe
             continue
 
