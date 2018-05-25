@@ -11,6 +11,17 @@ import tempfile
 import pyphen
 
 
+def hyph_text(f, outf, h):
+    wordregex = re.compile('(?u)(\W+)')
+
+    for l in f:
+        words = wordregex.split(l)
+        for j, w in enumerate(words):
+            if j % 2 == 0:  # even ones are separators
+                words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
+        outf.write(u''.join(words))
+
+
 def main(argv):
     locale.setlocale(locale.LC_ALL, '')
     deflang = locale.getlocale(locale.LC_COLLATE)[0] or 'en_GB'
@@ -27,16 +38,18 @@ def main(argv):
         dest='language',
         help='The language to lookup the hyphenation rules for '
              '(locale default: %s)' % deflang)
-    argparser.add_argument(
-        '-t', '--text', action='store_const',
-        dest='type', const='text',
-        help='Treat the following files as plain text files')
-    argparser.add_argument('file', nargs='+')
 
+    typearg = argparser.add_mutually_exclusive_group()
+    typearg.add_argument(
+        '-t', '--text', action='store_const',
+        dest='processor', const=hyph_text,
+        help='Process files as plain text files (default)')
+
+    argparser.add_argument('file', nargs='+')
     argparser.set_defaults(
         encoding=defenc,
         language=deflang,
-        type='text')
+        processor=hyph_text)
 
     opts = argparser.parse_args()
 
@@ -53,8 +66,7 @@ def main(argv):
                     with tempfile.NamedTemporaryFile(delete=False,
                             mode='w',
                             encoding=opts.encoding) as outf:
-                        if opts.type == 'text':
-                            hyph_text(f, outf, h)
+                        opts.processor(f, outf, h)
                     shutil.move(outf.name, path)
                 except Exception as e:
                     try:
@@ -69,17 +81,6 @@ def main(argv):
             argparser.error(str(e))
 
     return 0
-
-
-def hyph_text(f, outf, h):
-    wordregex = re.compile('(?u)(\W+)')
-
-    for l in f:
-        words = wordregex.split(l)
-        for j, w in enumerate(words):
-            if j % 2 == 0:  # even ones are separators
-                words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
-        outf.write(u''.join(words))
 
 
 if __name__ == "__main__":
