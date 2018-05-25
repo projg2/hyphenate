@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import codecs
 import locale
 import re
+import shutil
 import sys
+import tempfile
 
 import pyphen
 
@@ -46,19 +48,30 @@ def main(argv):
 
     for path in opts.file:
         try:
-            f = codecs.open(path, 'r+', opts.encoding)
+            with codecs.open(path, 'r', opts.encoding) as f:
+                try:
+                    with tempfile.NamedTemporaryFile(delete=False,
+                            mode='w',
+                            encoding=opts.encoding) as outf:
+                        if opts.type == 'text':
+                            hyph_text(f, outf, h)
+                    shutil.move(outf.name, path)
+                except Exception as e:
+                    try:
+                        os.unlink(outf.name)
+                    except:
+                        pass
+                    raise e
+
         except IOError as e:
             sys.stderr.write('open() failed: %s\n' % str(e))
         except LookupError as e:
             argparser.error(str(e))
-        else:
-            if opts.type == 'text':
-                hyph_text(f, h)
 
     return 0
 
 
-def hyph_text(f, h):
+def hyph_text(f, outf, h):
     wordregex = re.compile('(?u)(\W+)')
 
     lines = f.readlines()
@@ -70,9 +83,7 @@ def hyph_text(f, h):
                 words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
         lines[i] = u''.join(words)
 
-    f.seek(0)
-    f.truncate()
-    f.writelines(lines)
+    outf.writelines(lines)
 
 
 if __name__ == "__main__":
