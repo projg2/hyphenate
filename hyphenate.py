@@ -11,14 +11,29 @@ import tempfile
 import pyphen
 
 
-def hyph_text(f, outf, h):
-    wordregex = re.compile('(?u)(\W+)')
+wsregex = re.compile(r'(?u)(\s+)')
+wordregex = re.compile('(?u)(\W+)')
 
+
+def hyph_word(word, h, hyphen):
+    """Return hyphenated version of word."""
+    # do not hyphenate URLs
+    if '://' in word:
+        return word
+    # split further on word characters
+    words = wordregex.split(word)
+    for j, w in enumerate(words):
+        if j % 2 == 0:  # even ones are separators
+            words[j] = h.inserted(words[j], hyphen)  # soft hyphen
+    return u''.join(words)
+
+
+def hyph_text(f, outf, h):
     for l in f:
-        words = wordregex.split(l)
+        words = wsregex.split(l)
         for j, w in enumerate(words):
             if j % 2 == 0:  # even ones are separators
-                words[j] = h.inserted(w, hyphen=u'\u00ad')  # soft hyphen
+                words[j] = hyph_word(words[j], h, u'\u00ad')  # soft hyphen
         outf.write(u''.join(words))
 
 
