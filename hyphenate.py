@@ -3,7 +3,7 @@
 import codecs, locale, re, sys
 import optparse
 
-from hyphenator import Hyphenator
+import pyphen
 
 class MultiArgOptionParser(optparse.OptionParser):
 	@staticmethod
@@ -69,7 +69,7 @@ def main(argv):
 			else:
 				sys.stderr.write('Warning: options passed after the last file have no effect.\n')
 		try:
-			h = Hyphenator('/usr/share/myspell/hyph_%s.dic' % opts.language, 3, 3)
+			h = pyphen.Pyphen(lang=opts.language)
 		except IOError as e:
 			argparser.error('unknown language: %s (%s)' % (opts.language, str(e)))
 			# well, this probably won't be reached but keep it safe
@@ -97,7 +97,7 @@ def hyph_text(f, h):
 		words = wordregex.split(l)
 		for j, w in enumerate(words):
 			if j%2 == 0: # even ones are separators
-				words[j] = h.inserted(w, u'\u00ad') # soft hyphen
+				words[j] = h.inserted(w, hyphen=u'\u00ad') # soft hyphen
 		lines[i] = u''.join(words)
 
 	f.seek(0)
